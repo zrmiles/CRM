@@ -1,0 +1,17 @@
+.git
+.github/appmod-java
+.env
+.env.*
+!.env.example
+.venv
+venv
+__pycache__
+*.py[cod]
+.pytest_cache
+.mypy_cache
+test.db
+frontend/node_modules
+frontend/dist
+node_modules
+dist
+.DS_Store

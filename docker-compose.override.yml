@@ -1,0 +1,13 @@
+services:
+  backend:
+    environment:
+      DEBUG: "true"
+      CORS_ORIGINS: '["http://localhost:3000","http://127.0.0.1:3000"]'
+    volumes:
+      - ./app:/app/app:ro
+      - ./alembic:/app/alembic:ro
+
+  frontend:
+    build:
+      args:
+        VITE_API_URL: /api/v1
