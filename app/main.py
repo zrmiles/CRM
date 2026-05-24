@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import api_router
@@ -36,9 +36,23 @@ def create_app() -> FastAPI:
 
     application.include_router(api_router, prefix="/api/v1")
 
+    @application.get("/", tags=["health"])
+    async def root():
+        return {
+            "name": settings.APP_NAME,
+            "status": "ok",
+            "docs": "/docs",
+            "health": "/health",
+            "api": "/api/v1",
+        }
+
     @application.get("/health", tags=["health"])
     async def health():
         return {"status": "healthy"}
+
+    @application.get("/favicon.ico", include_in_schema=False)
+    async def favicon():
+        return Response(status_code=204)
 
     return application
 

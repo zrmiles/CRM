@@ -16,21 +16,21 @@ export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
   const fetchMe = useAuthStore((state) => state.fetchMe)
 
   useEffect(() => {
-    if (accessToken && !user && !isInitialized) {
+    if (!user && !isInitialized) {
       void fetchMe().catch(() => undefined)
     }
-  }, [accessToken, fetchMe, isInitialized, user])
+  }, [fetchMe, isInitialized, user])
 
-  if (!accessToken) {
-    return <Navigate to="/login" replace state={{ from: location }} />
-  }
-
-  if (isLoading || !isInitialized || !user) {
+  if (isLoading || !isInitialized) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-200">
         Загрузка профиля...
       </div>
     )
+  }
+
+  if (!accessToken || !user) {
+    return <Navigate to="/login" replace state={{ from: location }} />
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {

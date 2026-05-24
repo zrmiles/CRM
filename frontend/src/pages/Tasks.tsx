@@ -135,6 +135,62 @@ export function Tasks() {
     })
   }
 
+  const renderStatusBadge = (task: Task) => (
+    <span
+      className={[
+        'rounded-full px-3 py-1 text-xs font-medium',
+        task.is_completed ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700',
+      ].join(' ')}
+    >
+      {task.is_completed ? 'Выполнена' : 'Активна'}
+    </span>
+  )
+
+  const renderTaskActions = (task: Task, fullWidth = false) => (
+    <div className={`flex flex-wrap gap-1 ${fullWidth ? '[&>button]:flex-1' : ''}`}>
+      <button
+        type="button"
+        disabled={statusMutation.isPending}
+        onClick={() =>
+          statusMutation.mutate({
+            taskId: task.id,
+            isCompleted: !task.is_completed,
+          })
+        }
+        className={[
+          'inline-flex items-center justify-center gap-1 rounded-md border px-2.5 py-1.5 disabled:opacity-50',
+          task.is_completed
+            ? 'border-amber-200 text-amber-700 hover:bg-amber-50'
+            : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50',
+        ].join(' ')}
+      >
+        {task.is_completed ? (
+          <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+        ) : (
+          <Check className="h-3.5 w-3.5" aria-hidden="true" />
+        )}
+        {task.is_completed ? 'Вернуть в активные' : 'Отметить выполненной'}
+      </button>
+      <button
+        type="button"
+        onClick={() => openEdit(task)}
+        className="inline-flex items-center justify-center gap-1 rounded-md border border-slate-300 px-2.5 py-1.5 text-slate-700 hover:bg-slate-50"
+      >
+        <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+        Изменить
+      </button>
+      <button
+        type="button"
+        disabled={deleteMutation.isPending}
+        onClick={() => setDeletingTask(task)}
+        className="inline-flex items-center justify-center gap-1 rounded-md border border-red-200 px-2.5 py-1.5 text-red-700 hover:bg-red-50 disabled:opacity-50"
+      >
+        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+        Удалить
+      </button>
+    </div>
+  )
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -227,7 +283,54 @@ export function Tasks() {
       </section>
 
       <div className="app-panel rounded-lg">
-        <div className="overflow-x-auto">
+        <div className="divide-y divide-slate-100 md:hidden">
+          {tasksQuery.isLoading && (
+            <div className="px-3 py-6 text-center text-slate-500">Загрузка задач...</div>
+          )}
+          {tasksQuery.data?.items.map((task) => {
+            const deal = dealsQuery.data?.items.find((item) => item.id === task.deal_id)
+            return (
+              <article key={task.id} className="space-y-3 px-3 py-4">
+                <div className="space-y-1">
+                  <p className="font-medium text-slate-950">{task.title}</p>
+                  {task.description && <p className="text-sm text-slate-500">{task.description}</p>}
+                </div>
+                <dl className="grid gap-2 text-sm">
+                  <div>
+                    <dt className="text-xs font-semibold uppercase text-slate-500">Сделка</dt>
+                    <dd>
+                      <Link to={`/deals/${task.deal_id}`} className="font-medium text-cyan-700">
+                        {deal?.title ?? `Сделка #${task.deal_id}`}
+                      </Link>
+                    </dd>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <dt className="text-xs font-semibold uppercase text-slate-500">Исполнитель</dt>
+                      <dd className="text-slate-700">
+                        {canSeeAll ? getUserLabel(usersQuery.data, task.assignee_id) : 'Вы'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs font-semibold uppercase text-slate-500">Статус</dt>
+                      <dd>{renderStatusBadge(task)}</dd>
+                    </div>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-semibold uppercase text-slate-500">Дедлайн</dt>
+                    <dd className="text-slate-700">{formatDate(task.due_date)}</dd>
+                  </div>
+                </dl>
+                {renderTaskActions(task, true)}
+              </article>
+            )
+          })}
+          {!tasksQuery.isLoading && !tasksQuery.data?.items.length && (
+            <div className="px-3 py-6 text-center text-slate-500">Задачи не найдены.</div>
+          )}
+        </div>
+
+        <div className="hidden overflow-x-auto md:block">
           <table className="table-compact">
             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
@@ -264,62 +367,8 @@ export function Tasks() {
                       {canSeeAll ? getUserLabel(usersQuery.data, task.assignee_id) : 'Вы'}
                     </td>
                     <td className="px-3 py-2.5 text-slate-600">{formatDate(task.due_date)}</td>
-                    <td className="px-3 py-2.5">
-                      <span
-                        className={[
-                          'rounded-full px-3 py-1 text-xs font-medium',
-                          task.is_completed
-                            ? 'bg-emerald-50 text-emerald-700'
-                            : 'bg-amber-50 text-amber-700',
-                        ].join(' ')}
-                      >
-                        {task.is_completed ? 'Выполнена' : 'Активна'}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <div className="flex flex-wrap gap-1">
-                        <button
-                          type="button"
-                          disabled={statusMutation.isPending}
-                          onClick={() =>
-                            statusMutation.mutate({
-                              taskId: task.id,
-                              isCompleted: !task.is_completed,
-                            })
-                          }
-                          className={[
-                            'inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 disabled:opacity-50',
-                            task.is_completed
-                              ? 'border-amber-200 text-amber-700 hover:bg-amber-50'
-                              : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50',
-                          ].join(' ')}
-                        >
-                          {task.is_completed ? (
-                            <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-                          ) : (
-                            <Check className="h-3.5 w-3.5" aria-hidden="true" />
-                          )}
-                          {task.is_completed ? 'Вернуть в активные' : 'Отметить выполненной'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => openEdit(task)}
-                          className="inline-flex items-center gap-1 rounded-md border border-slate-300 px-2.5 py-1.5 text-slate-700 hover:bg-slate-50"
-                        >
-                          <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-                          Изменить
-                        </button>
-                        <button
-                          type="button"
-                          disabled={deleteMutation.isPending}
-                          onClick={() => setDeletingTask(task)}
-                          className="inline-flex items-center gap-1 rounded-md border border-red-200 px-2.5 py-1.5 text-red-700 hover:bg-red-50 disabled:opacity-50"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                          Удалить
-                        </button>
-                      </div>
-                    </td>
+                    <td className="px-3 py-2.5">{renderStatusBadge(task)}</td>
+                    <td className="px-3 py-2.5">{renderTaskActions(task)}</td>
                   </tr>
                 )
               })}
